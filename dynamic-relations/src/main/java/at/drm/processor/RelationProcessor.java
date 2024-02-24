@@ -12,18 +12,17 @@ import lombok.Setter;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.Modifier;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.MirroredTypeException;
+import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @AutoService(Processor.class)
-public class ReleationProcessor extends AbstractProcessor {
+public class RelationProcessor extends AbstractProcessor {
 
     private Filer filer;
 
@@ -71,7 +70,7 @@ public class ReleationProcessor extends AbstractProcessor {
         Relation relationAnnotation = relationElement.getAnnotation(Relation.class);
         String elementPackage = processingEnv.getElementUtils()
                 .getPackageOf(relationElement).getQualifiedName().toString();
-        TypeName sourceObjectName = getSourceObjectTypeName(relationAnnotation);
+        TypeName sourceObjectName = getSourceObjectTypeName(relationElement.getAnnotationMirrors(), relationAnnotation);
         String sourceObjectWithoutPackages = sourceObjectName.toString().replace(elementPackage + ".", "");
         String generatedEntityName = sourceObjectWithoutPackages + "Relation";
         return new RelationMetaData(sourceObjectName, elementPackage, generatedEntityName, relationAnnotation);
@@ -132,8 +131,8 @@ public class ReleationProcessor extends AbstractProcessor {
                 .build();
     }
 
-    private TypeName getSourceObjectTypeName(Relation annotation) {
-        TypeMirror typeMirror = getSourceClass(annotation);
+    private TypeName getSourceObjectTypeName(List<? extends AnnotationMirror> annotationMirrors, Relation annotation) {
+        TypeMirror typeMirror = getSourceClass(annotationMirrors, annotation);
         assert typeMirror != null;
         return ClassName.get(typeMirror);
     }
@@ -141,7 +140,7 @@ public class ReleationProcessor extends AbstractProcessor {
     private FieldSpec createSourceObjectField(TypeName typeName) {
         return FieldSpec.builder(typeName, "sourceObject", Modifier.PRIVATE)
                 .addAnnotation(ManyToOne.class)
-                .addAnnotation(createJoinColumnAnnotaion())
+                .addAnnotation(createJoinColumnAnnotation())
                 .build();
     }
 
@@ -152,7 +151,7 @@ public class ReleationProcessor extends AbstractProcessor {
                 .build();
     }
 
-    private AnnotationSpec createJoinColumnAnnotaion() {
+    private AnnotationSpec createJoinColumnAnnotation() {
         return AnnotationSpec.builder(JoinColumn.class)
                 .addMember("name", "$S", "source_object")
                 .build();
@@ -185,15 +184,35 @@ public class ReleationProcessor extends AbstractProcessor {
         }
     }
 
-
-    //TODO refactor with the more right way see:
-    // https://stackoverflow.com/questions/7687829/java-6-annotation-processing-getting-a-class-from-an-annotation
-    private TypeMirror getSourceClass(Relation annotation) {
-        try {
-            annotation.sourceClass(); // this should throw
-        } catch (MirroredTypeException mte) {
-            return mte.getTypeMirror();
+    public TypeMirror getSourceClass(List<? extends AnnotationMirror> annotationMirrors, Relation relation) {
+        AnnotationMirror mirror = getAnnotationMirror(annotationMirrors, relation.getClass());
+        if(mirror == null) {
+            return null;
         }
-        return null; // can this ever happen ??
+        AnnotationValue value = getAnnotationValue(mirror, relation.sourceClass().getSimpleName());
+        if(value == null) {
+            return null;
+        } else {
+            return (TypeMirror) value.getValue();
+        }
+    }
+
+    private static AnnotationMirror getAnnotationMirror(List<? extends AnnotationMirror> annotationMirrors, Class<?> clazz) {
+        String clazzName = clazz.getName();
+        for(AnnotationMirror m : annotationMirrors) {
+            if(m.getAnnotationType().toString().equals(clazzName)) {
+                return m;
+            }
+        }
+        return null;
+    }
+
+    private static AnnotationValue getAnnotationValue(AnnotationMirror annotationMirror, String key) {
+        for(Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror.getElementValues().entrySet()) {
+            if(entry.getKey().getSimpleName().toString().equals(key)) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 }

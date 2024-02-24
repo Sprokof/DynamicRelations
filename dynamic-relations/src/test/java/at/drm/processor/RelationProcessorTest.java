@@ -19,7 +19,7 @@ import static com.google.testing.compile.Compiler.javac;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
-class ReleationProcessorTest {
+class RelationProcessorTest {
 
     @Mock
     private ProcessingEnvironment processingEnvironment;
@@ -27,35 +27,35 @@ class ReleationProcessorTest {
     @Mock
     private Messager messager;
 
-    ReleationProcessor releationProcessorUnderTest = new ReleationProcessor();
+    RelationProcessor relationProcessorUnderTest = new RelationProcessor();
 
     @Test
     void init() {
         Mockito.when(processingEnvironment.getMessager()).thenReturn(messager);
-        releationProcessorUnderTest.init(processingEnvironment);
+        relationProcessorUnderTest.init(processingEnvironment);
     }
 
     @Test
     void getSupportedAnnotationTypes() {
         Mockito.when(processingEnvironment.getMessager()).thenReturn(messager);
-        releationProcessorUnderTest.init(processingEnvironment);
-        Set<String> supportedAnnotationTypes = releationProcessorUnderTest.getSupportedAnnotationTypes();
+        relationProcessorUnderTest.init(processingEnvironment);
+        Set<String> supportedAnnotationTypes = relationProcessorUnderTest.getSupportedAnnotationTypes();
         assertThat(supportedAnnotationTypes).contains(Relation.class.getCanonicalName());
     }
 
     @Test
     void getSupportedSourceVersion() {
         Mockito.when(processingEnvironment.getMessager()).thenReturn(messager);
-        releationProcessorUnderTest.init(processingEnvironment);
-        SourceVersion supportedSourceVersion = releationProcessorUnderTest.getSupportedSourceVersion();
+        relationProcessorUnderTest.init(processingEnvironment);
+        SourceVersion supportedSourceVersion = relationProcessorUnderTest.getSupportedSourceVersion();
         assertThat(supportedSourceVersion).isEqualTo(SourceVersion.RELEASE_17);
     }
 
     @Test
     void process() {
-        ReleationProcessor releationProcessor = new ReleationProcessor();
+        RelationProcessor relationProcessor = new RelationProcessor();
         Compilation compilation = javac()
-                .withProcessors(releationProcessor)
+                .withProcessors(relationProcessor)
                 .compile(JavaFileObjects.forResource("TestFile.java"));
         //TODO cant compile because of lombok missing overrides annoation
         CompilationSubject.assertThat(compilation)

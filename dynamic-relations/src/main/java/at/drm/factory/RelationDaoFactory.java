@@ -14,35 +14,34 @@ import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
+@SuppressWarnings("rawtypes")
 public class RelationDaoFactory {
 
     private final ApplicationContext applicationContext;
 
     public RelationDao getDaoFromSourceObjectClass(Class dynamicRelactionClass) {
         Map<String, RelationDao> beansOfType = applicationContext.getBeansOfType(RelationDao.class);
-        RelationDao relationDao = beansOfType.values().stream()
+        return beansOfType.values().stream()
                 .filter(dao -> {
                     ResolvableType resolvableType = ResolvableType.forClass(dao.getClass())
                             .as(RelationDao.class);
                     ResolvableType generic = resolvableType.getGeneric(0);
                     Class<?> resolve = generic.resolve();
                     assert resolve != null;
-                    Field sourceObject = getDeclaredField(resolve, "sourceObject");
+                    Field sourceObject = getDeclaredField(resolve);
                     Class<?> type = sourceObject.getType();
                     return type.equals(dynamicRelactionClass);
                 }).findFirst().orElseThrow(() -> new NoRelationDaoFoundException("No DynamicRelationDao was found!"));
-        return relationDao;
     }
 
     public Set<RelationDao> getAllDaos() {
         Map<String, RelationDao> beansOfType = applicationContext.getBeansOfType(RelationDao.class);
-        Set<RelationDao> relationDaos = new HashSet<>(beansOfType.values());
-        return relationDaos;
+        return new HashSet<>(beansOfType.values());
     }
 
-    private Field getDeclaredField(Class<?> resolve, String field) {
+    private Field getDeclaredField(Class<?> resolve) {
         try {
-            return resolve.getDeclaredField(field);
+            return resolve.getDeclaredField("sourceObject");
         } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         }

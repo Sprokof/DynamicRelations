@@ -17,6 +17,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class RelationService {
 
     private final RelationDaoFactory relationDaoFactory;
@@ -42,16 +43,14 @@ public class RelationService {
     public RelationLink findRelationBySourceObjectAndRelationIdentity(@NonNull Object sourceObject, @NonNull RelationIdentity targetObect) {
         RelationDao<RelationLink, Long> daoFromSourceObject =
                 relationDaoFactory.getDaoFromSourceObjectClass(sourceObject.getClass());
-        RelationLink relationLink = daoFromSourceObject.
+        return daoFromSourceObject.
                 findBySourceObjectAndTargetIdAndTargetType(sourceObject, targetObect.getId(), targetObect.getType());
-        return relationLink;
     }
 
     public List<RelationLink> findRelationBySourceObject(@NonNull Object sourceObject) {
         RelationDao<RelationLink, Long> daoFromSourceObject =
                 relationDaoFactory.getDaoFromSourceObjectClass(sourceObject.getClass());
-        List<RelationLink> relationLinks = daoFromSourceObject.findBySourceObject(sourceObject);
-        return relationLinks;
+        return daoFromSourceObject.findBySourceObject(sourceObject);
     }
 
     public Set<RelationLink> findRelationByTargetRelationIdentity(@NonNull RelationIdentity targetObect) {
@@ -67,6 +66,7 @@ public class RelationService {
                 .as(RelationDao.class);
         ResolvableType generic = resolvableType.getGeneric(0);
         Class<?> resolve = generic.resolve();
+        assert resolve != null;
         return (RelationLink) BeanUtils.instantiateClass(resolve);
     }
 }
